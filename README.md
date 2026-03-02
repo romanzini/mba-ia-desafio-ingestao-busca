@@ -97,9 +97,52 @@ RESPOSTA: Não tenho informações necessárias para responder sua pergunta.
 ├── src/
 │   ├── ingest.py            # Ingestão do PDF no banco vetorial
 │   ├── search.py            # Busca semântica e chamada ao LLM
-│   └── chat.py              # CLI interativo
+│   ├── chat.py              # CLI interativo
+│   └── observability.py     # Logging estruturado, timing e LangSmith
 └── README.md
 ```
+
+---
+
+## Observabilidade
+
+O projeto conta com três camadas de observabilidade:
+
+### Logging estruturado
+
+Todos os scripts emitem logs com timestamp, nível e contexto:
+
+```
+2026-03-02 10:00:00 [INFO] __main__: Carregando PDF: ./document.pdf
+2026-03-02 10:00:01 [INFO] __main__: PDF carregado: 12 página(s)
+2026-03-02 10:00:01 [INFO] __main__: Documento dividido em 48 chunks
+2026-03-02 10:00:04 [INFO] __main__: ingest_pdf concluído em 3.42s
+```
+
+### Métricas de tempo
+
+O decorador `@timed` em `ingest_pdf` e os timers internos em `chain` registram:
+- Tempo total de ingestão
+- Tempo de busca vetorial (similarity search)
+- Tempo de resposta da LLM
+- Scores de similaridade dos documentos recuperados
+
+### LangSmith (tracing distribuído)
+
+Para habilitar o rastreamento completo das chamadas LangChain no dashboard do [LangSmith](https://smith.langchain.com):
+
+1. Crie uma conta e gere uma API Key em https://smith.langchain.com
+2. Preencha as variáveis no `.env`:
+
+   ```env
+   LANGCHAIN_TRACING_V2=true
+   LANGCHAIN_API_KEY=ls__...
+   LANGCHAIN_PROJECT=mba-ia-desafio-ingestao-busca
+   ```
+
+3. Execute normalmente — todas as chamadas ao LLM e à busca vetorial serão enviadas automaticamente ao LangSmith.
+
+> Com `LANGCHAIN_TRACING_V2=false` ou sem a `LANGCHAIN_API_KEY`, o sistema funciona normalmente sem enviar dados ao LangSmith.
 
 ---
 
@@ -109,3 +152,4 @@ RESPOSTA: Não tenho informações necessárias para responder sua pergunta.
 - **OpenAI** — embeddings (`text-embedding-3-small`) e LLM (`gpt-5-nano`)
 - **PostgreSQL + pgVector** — armazenamento e busca vetorial
 - **Docker Compose** — banco de dados isolado em container
+- **LangSmith** — tracing e observabilidade das chamadas LangChain
